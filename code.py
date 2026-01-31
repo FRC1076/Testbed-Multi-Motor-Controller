@@ -3,19 +3,40 @@ import board
 import digitalio
 import analogio
 import neopixel
+import pwmio
+from adafruit_motor import servo
 
 OFF = (0, 0, 0)
 BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 
 indicator_pin = digitalio.DigitalInOut(board.GP15)
 indicator_pin.direction = digitalio.Direction.OUTPUT
 
-SPEED_PER_INDEX = 2000
+pwm = pwmio.PWMOut(board.GP18, frequency=50)
+talon_speed_controller = servo.ContinuousServo(pwm)
+
+SPEED_PER_INDEX = 4000
+SERVO_PER_SPEED = 65535.0
+BASEBAND = 0.01
 
 def speed_to_index(speed):
     return speed // SPEED_PER_INDEX
+    
+def speed_to_servo(speed):
+    servo = speed / SERVO_PER_SPEED
+    if abs(servo) < BASEBAND:
+        return 0.0
+    else:
+        return servo
 
 speed_pin = analogio.AnalogIn(board.GP27)
+direction_pin = digitalio.DigitalInOut(board.GP22)
+direction_pin.direction = digitalio.Direction.INPUT
+direction_pin.pull = digitalio.Pull.UP
+
+
 #speed_pin.direction = analogio.AnalogIn
 
 pixels = neopixel.NeoPixel(board.GP16, 32, brightness=0.1)
@@ -33,11 +54,29 @@ while True:
     time.sleep(0.1)
 
     pixels.fill(OFF)
-    print("Speed: ", speed_pin.value)
+    #print("Speed: ", speed_pin.value)
     index = speed_to_index(speed_pin.value)
-    print("Index: ", index)
+    #print("Index: ", index)
+    #print("*" * index)
+
+    if direction_pin.value:
+        direction_sign = 1
+        direction_color = GREEN
+    else:
+        direction_sign = -1
+        direction_color = RED
+        
+    servo = speed_to_servo(speed_pin.value)
+    print("Servo: ", servo)
+    talon_speed_controller.throttle = servo * direction_sign
     
     for i in range(index):
-        pixels[i] = BLUE
+        pixels[i] = direction_color
         
+    for i in range(16, index+16):
+        pixels[i] = RED
+
     pixels.show()
+
+
+
