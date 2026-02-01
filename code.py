@@ -19,14 +19,14 @@ talon_speed_controller = servo.ContinuousServo(pwm)
 
 SPEED_PER_INDEX = 4000
 SERVO_PER_SPEED = 65535.0
-BASEBAND = 0.01
+DEADBAND = 0.01
 
 def speed_to_index(speed):
     return speed // SPEED_PER_INDEX
     
 def speed_to_servo(speed):
     servo = speed / SERVO_PER_SPEED
-    if abs(servo) < BASEBAND:
+    if abs(servo) < DEADBAND:
         return 0.0
     else:
         return servo
