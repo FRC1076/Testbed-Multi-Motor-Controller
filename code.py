@@ -6,15 +6,25 @@ import neopixel
 import pwmio
 from adafruit_motor import servo
 
+"""
+This version is for second(woody) prototype using RPi Feather.
+It includes two controls (LEFT, and RIGHT).
+A MASTER button determines whether or not the two motors are controlled by the same, or if the controls are separate.
+Each side has a FORWARD/REVERSE toggle switch to specify the direction of the motor.
+"""
+
 OFF = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+PURPLE = (120, 0, 120)
 
-indicator_pin = digitalio.DigitalInOut(board.GP15)
-indicator_pin.direction = digitalio.Direction.OUTPUT
+indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 
-pwm = pwmio.PWMOut(board.GP18, frequency=50)
+#indicator_pin = digitalio.DigitalInOut(board.GP15)
+#indicator_pin.direction = digitalio.Direction.OUTPUT
+
+pwm = pwmio.PWMOut(board.D12, frequency=50)
 talon_speed_controller = servo.ContinuousServo(pwm)
 
 SPEED_PER_INDEX = 4000
@@ -31,26 +41,23 @@ def speed_to_servo(speed):
     else:
         return servo
 
-speed_pin = analogio.AnalogIn(board.GP27)
-direction_pin = digitalio.DigitalInOut(board.GP22)
+speed_pin = analogio.AnalogIn(board.A0)
+direction_pin = digitalio.DigitalInOut(board.D10)
 direction_pin.direction = digitalio.Direction.INPUT
 direction_pin.pull = digitalio.Pull.UP
 
 
 #speed_pin.direction = analogio.AnalogIn
 
-pixels = neopixel.NeoPixel(board.GP16, 32, brightness=0.1)
-
-print("Pin is configured")
-print("Pin is set to ", indicator_pin.direction)
+pixels = neopixel.NeoPixel(board.D6, 32, brightness=0.1)
 
 pixels.auto_write = False
 pixels.fill(OFF)
 
 while True:
-    indicator_pin.value = True
+    indicator_pixel[0] = PURPLE
     time.sleep(0.1)
-    indicator_pin.value = False
+    indicator_pixel[0] = OFF
     time.sleep(0.1)
 
     pixels.fill(OFF)
@@ -67,7 +74,7 @@ while True:
         direction_color = RED
         
     servo = speed_to_servo(speed_pin.value)
-    print("Servo: ", servo)
+    #print("Servo: ", servo)
     talon_speed_controller.throttle = servo * direction_sign
     
     for i in range(index):
@@ -77,6 +84,8 @@ while True:
         pixels[i] = RED
 
     pixels.show()
+
+
 
 
 
