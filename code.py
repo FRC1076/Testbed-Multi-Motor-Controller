@@ -6,6 +6,10 @@ import neopixel
 import pwmio
 from adafruit_motor import servo
 
+"""
+This code works on raspberry pi pico breadboard prototype, for a single motor control.
+"""
+
 OFF = (0, 0, 0)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
