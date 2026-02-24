@@ -30,7 +30,7 @@ indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 #indicator_pin = digitalio.DigitalInOut(board.GP15)
 #indicator_pin.direction = digitalio.Direction.OUTPUT
 
-pwm[0] = pwmio.PWMOut(board.D12, frequency=50)
+pwm[0] = pwmio.PWMOut(board.D24, frequency=50)
 talon_speed_controller[0] = servo.ContinuousServo(pwm[0])
 
 SPEED_PER_INDEX = 4000
