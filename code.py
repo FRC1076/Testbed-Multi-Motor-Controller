@@ -8,14 +8,15 @@ from adafruit_motor import servo as adafruit_servo
 
 """
 This version is for the second (woody) prototype using an RPi Feather.
-It includes two controls (LEFT and RIGHT).
-A MASTER button determines whether or not the motors are running or not.
+It includes two controls (LEFT and RIGHT). A MASTER button determines whether or not the motors are running or not. 
 Each side has a FORWARD/REVERSE toggle switch to specify the direction of the motor.
+Contains a safety feature that displays the speed in blinking orange if either motor is on at the start, 
+and refuses to power the motors until the condition is corrected.
 """
 
 # Colors
 OFF = (0, 0, 0)
-ORANGE = (255,127,0)
+ORANGE = (255,63,0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 PURPLE = (120, 0, 120)
@@ -34,13 +35,14 @@ def speed_to_index(speed):
     """
     return speed // SPEED_PER_INDEX
 
-def check_for_nonzero_speed(pins):
+def check_for_nonzero_speed(speed_pins):
     """
     See if any pins are on
     """
     non_zeros = [ ]
     for channel in range(NUM_CHANNELS):
-        if pins[channel] > DEADBAND:
+        pins = speed_to_servo(speed_pins[channel].value)
+        if pins > DEADBAND:
             non_zeros.append(channel)
     return non_zeros
 
@@ -53,6 +55,28 @@ def speed_to_servo(speed):
         return 0.0
     else:
         return servo
+
+class PixelBlinking:
+    """
+    Make pixels blink while not slowing cycles
+    """
+    def __init__ (self):
+        self.CYCLES_PER_TOGGLE = 25
+        self.cycle_count = 0
+        self.indicator_color = OFF
+        self.error_color = OFF
+
+    def update(self):
+        self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
+        if self.cycle_count == 0:
+            if self.indicator_color == OFF:
+                self.indicator_color = PURPLE
+                self.error_color = ORANGE
+            else:
+                self.indicator_color = OFF
+                self.error_color = OFF
+        return self.indicator_color, self.error_color
+pixel_blinking = PixelBlinking()
 
 # Controller Pins
 MASTER_SWITCH_PIN = board.D9
@@ -96,25 +120,27 @@ pixels.fill(OFF)
 indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 
 # Make sure motors don't immediately start
-non_zeros = check_for_nonzero_speed(speed_to_servo(speed_pin[channel].value))
+non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
+    # Running indicator flashing
+    indicator_color, error_color = pixel_blinking.update()
+    indicator_pixel[0] = indicator_color
+
+    pixels.fill(OFF)
     for channel in non_zeros:
         index[channel] = speed_to_index(speed_pin[channel].value)
         START_VAL = int(channel*32/NUM_CHANNELS)
         for i in range(START_VAL,index[channel]+START_VAL):
-            pixels[i] = ORANGE
-            time.sleep(0.1)
-            pixels[i] = OFF
-            time.sleep(0.1)
+            pixels[i] = error_color
+            
     pixels.show()
-    non_zeros = check_for_nonzero_speed(speed_to_servo(speed_pin[channel].value))
+    time.sleep(0.02)
+    non_zeros = check_for_nonzero_speed(speed_pin)
 
 while True:
     # Running indicator flashing
-    indicator_pixel[0] = PURPLE
-    time.sleep(0.1)
-    indicator_pixel[0] = OFF
-    time.sleep(0.1)
+    indicator_color = pixel_blinking.update()
+    indicator_pixel[0] = indicator_color
     
     # Pixel writing part 2/2
     pixels.fill(OFF)
@@ -140,3 +166,4 @@ while True:
         print("Servo",channel,":",servo[channel] * direction_sign[channel])
 
     pixels.show()
+    time.sleep(0.02)
