@@ -8,7 +8,7 @@ from adafruit_motor import servo as adafruit_servo
 
 """
 This version is for the second (woody) prototype using an RPi Feather.
-It includes two controls (LEFT and RIGHT). A MASTER button determines whether or not the motors are running or not. 
+It includes two controls (LEFT and RIGHT). A MASTER button determines whether or not the motors are running or not.
 Each side has a FORWARD/REVERSE toggle switch to specify the direction of the motor.
 Contains a safety feature that displays the speed in blinking orange if either motor is on at the start, 
 and refuses to power the motors until the condition is corrected.
@@ -139,7 +139,7 @@ while len(non_zeros) != 0:
 
 while True:
     # Running indicator flashing
-    indicator_color = pixel_blinking.update()
+    indicator_color, error_color = pixel_blinking.update()
     indicator_pixel[0] = indicator_color
     
     # Pixel writing part 2/2
