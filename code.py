@@ -5,6 +5,8 @@ import analogio
 import neopixel
 import pwmio
 from adafruit_motor import servo as adafruit_servo
+if board.board_id == 'adafruit_feather_rp2040':
+    import feather_rp2040 as hw
 
 """
 This version is for the second (woody) prototype using an RPi Feather.
@@ -79,10 +81,10 @@ class PixelBlinking:
 pixel_blinking = PixelBlinking()
 
 # Controller Pins
-MASTER_SWITCH_PIN = board.D9
-PWM_PINS = [board.D24,board.D25]
-ANALOG_PINS = [(board.A0,board.D4),(board.A1,board.RX)]
-NEOPIXEL_PIN = board.D6
+MASTER_SWITCH_PIN = hw.MASTER_SWITCH_PIN
+PWM_PINS = hw.PWM_PINS
+ANALOG_PINS = hw.ANALOG_PINS
+NEOPIXEL_PIN = hw.NEOPIXEL_PIN
 
 # Array creation. See NUM_CHANNELS above in Functions
 pwm = [None] * NUM_CHANNELS
