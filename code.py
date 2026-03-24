@@ -80,12 +80,6 @@ class PixelBlinking:
         return self.indicator_color, self.error_color
 pixel_blinking = PixelBlinking()
 
-# Controller Pins
-MASTER_SWITCH_PIN = hw.MASTER_SWITCH_PIN
-PWM_OUT_PINS = hw.PWM_OUT_PINS
-POTENTIOMETER_AND_SWITCH_PINS = hw.POTENTIOMETER_AND_SWITCH_PINS
-NEOPIXEL_PIN = hw.NEOPIXEL_PIN
-
 # Array creation. See NUM_CHANNELS above in Functions
 pwm = [None] * NUM_CHANNELS
 talon_speed_controller = [None] * NUM_CHANNELS
@@ -97,24 +91,24 @@ servo = [None] * NUM_CHANNELS
 index = [None] * NUM_CHANNELS
 
 # Master Switch initialization
-master_switch = digitalio.DigitalInOut(MASTER_SWITCH_PIN)
+master_switch = digitalio.DigitalInOut(hw.MASTER_SWITCH_PIN)
 master_switch.direction = digitalio.Direction.INPUT
 master_switch.pull = digitalio.Pull.UP
 
 # PWM Creation
-for (channel,pin) in enumerate(PWM_OUT_PINS):
+for (channel,pin) in enumerate(hw.PWM_OUT_PINS):
     pwm[channel] = pwmio.PWMOut(pin,frequency=50)
     talon_speed_controller[channel] = adafruit_servo.ContinuousServo(pwm[channel])
 
 # Speed and Direction pin creation
-for (channel,(A_pin,D_pin)) in enumerate(POTENTIOMETER_AND_SWITCH_PINS):
+for (channel,(A_pin,D_pin)) in enumerate(hw.POTENTIOMETER_AND_SWITCH_PINS):
     speed_pin[channel] = analogio.AnalogIn(A_pin)
     direction_pin[channel] = digitalio.DigitalInOut(D_pin)
     direction_pin[channel].direction = digitalio.Direction.INPUT
     direction_pin[channel].pull = digitalio.Pull.UP
 
 # Pixel writing part 1/2
-pixels = neopixel.NeoPixel(NEOPIXEL_PIN, 32, brightness=0.1)
+pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, 32, brightness=0.1)
 pixels.auto_write = False
 pixels.fill(OFF)
 
