@@ -159,7 +159,10 @@ while True:
         else:
             servo[channel] = 0
         talon_speed_controller[channel].throttle = servo[channel] * direction_sign[channel]
-        print("Servo",channel,":",servo[channel] * direction_sign[channel])
+        if master_switch.value:
+            print("Servo",channel,":",servo[channel] * direction_sign[channel])
+        else:
+            print("Master Switch Off")
 
     pixels.show()
     time.sleep(0.02)
