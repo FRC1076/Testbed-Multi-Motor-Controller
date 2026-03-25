@@ -24,10 +24,7 @@ GREEN = (0, 255, 0)
 PURPLE = (120, 0, 120)
 
 # Functions
-NUM_CHANNELS = 2**1  # NUM_CHANNELS should be a power of 2, or things get weird.
-if NUM_CHANNELS > 32:
-    raise
-SPEED_PER_INDEX = 8000/NUM_CHANNELS
+SPEED_PER_INDEX = 8000/hw.NUM_CHANNELS
 SERVO_PER_SPEED = 65535.0
 DEADBAND = 0.01
 
@@ -42,7 +39,7 @@ def check_for_nonzero_speed(speed_pins):
     See if any pins are on
     """
     non_zeros = [ ]
-    for channel in range(NUM_CHANNELS):
+    for channel in range(hw.NUM_CHANNELS):
         pins = speed_to_servo(speed_pins[channel].value)
         if pins > DEADBAND:
             non_zeros.append(channel)
@@ -80,15 +77,15 @@ class PixelBlinking:
         return self.indicator_color, self.error_color
 pixel_blinking = PixelBlinking()
 
-# Array creation. See NUM_CHANNELS above in Functions
-pwm = [None] * NUM_CHANNELS
-talon_speed_controller = [None] * NUM_CHANNELS
-speed_pin = [None] * NUM_CHANNELS
-direction_pin = [None] * NUM_CHANNELS
-direction_color = [None] * NUM_CHANNELS
-direction_sign = [None] * NUM_CHANNELS
-servo = [None] * NUM_CHANNELS
-index = [None] * NUM_CHANNELS
+# Array creation
+pwm = [None] * hw.NUM_CHANNELS
+talon_speed_controller = [None] * hw.NUM_CHANNELS
+speed_pin = [None] * hw.NUM_CHANNELS
+direction_pin = [None] * hw.NUM_CHANNELS
+direction_color = [None] * hw.NUM_CHANNELS
+direction_sign = [None] * hw.NUM_CHANNELS
+servo = [None] * hw.NUM_CHANNELS
+index = [None] * hw.NUM_CHANNELS
 
 # Master Switch initialization
 master_switch = digitalio.DigitalInOut(hw.MASTER_SWITCH_PIN)
@@ -125,7 +122,7 @@ while len(non_zeros) != 0:
     pixels.fill(OFF)
     for channel in non_zeros:
         index[channel] = speed_to_index(speed_pin[channel].value)
-        START_VAL = int(channel*32/NUM_CHANNELS)
+        START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
         for i in range(START_VAL,index[channel]+START_VAL):
             pixels[i] = error_color
             
@@ -140,7 +137,7 @@ while True:
     
     # Pixel writing part 2/2
     pixels.fill(OFF)
-    for channel in range (NUM_CHANNELS):
+    for channel in range (hw.NUM_CHANNELS):
         # NeoFeather lights
         if direction_pin[channel].value:
             direction_sign[channel] = -1
@@ -149,7 +146,7 @@ while True:
             direction_sign[channel] = 1
             direction_color[channel] = GREEN
         index[channel] = speed_to_index(speed_pin[channel].value)
-        START_VAL = int(channel*32/NUM_CHANNELS)
+        START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
         for i in range(START_VAL,index[channel]+START_VAL):
             pixels[i] = direction_color[channel]
             
