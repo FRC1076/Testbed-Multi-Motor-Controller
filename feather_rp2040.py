@@ -9,5 +9,5 @@ NEOPIXEL_PIN = board.D6
 # Numbers of things
 NUM_LIGHTS = 32
 NUM_CHANNELS = 2  # NUM_CHANNELS should be a factor of NUM_LIGHTS
-if NUM_CHANNELS > NUM_LIGHTS / 2:
+if NUM_CHANNELS > NUM_LIGHTS:
     raise
