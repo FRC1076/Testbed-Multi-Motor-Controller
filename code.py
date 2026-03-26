@@ -60,21 +60,21 @@ class PixelBlinking:
     Make pixels blink while not slowing cycles
     """
     def __init__ (self):
-        self.CYCLES_PER_TOGGLE = 25
+        self.CYCLES_PER_TOGGLE = 10
         self.cycle_count = 0
         self.indicator_color = OFF
-        self.error_color = OFF
+        self.light_state = 0
 
     def update(self):
         self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
         if self.cycle_count == 0:
-            if self.indicator_color == OFF:
-                self.indicator_color = PURPLE
-                self.error_color = ORANGE
-            else:
+            if self.light_state:
                 self.indicator_color = OFF
-                self.error_color = OFF
-        return self.indicator_color, self.error_color
+                self.light_state = 0
+            else:
+                self.indicator_color = PURPLE
+                self.light_state = 1
+        return self.indicator_color, self.light_state
 pixel_blinking = PixelBlinking()
 
 # Array creation
@@ -116,23 +116,24 @@ indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
     # Running indicator flashing
-    indicator_color, error_color = pixel_blinking.update()
+    indicator_color, lights_state = pixel_blinking.update()
     indicator_pixel[0] = indicator_color
-
+    
     pixels.fill(OFF)
-    for channel in non_zeros:
-        index[channel] = speed_to_index(speed_pin[channel].value)
-        START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
-        for i in range(START_VAL,index[channel]+START_VAL):
-            pixels[i] = error_color
-            
+    if lights_state:
+        for channel in non_zeros:
+            index[channel] = speed_to_index(speed_pin[channel].value)
+            START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
+            for i in range(START_VAL,index[channel]+START_VAL):
+                pixels[i] = ORANGE
+    
     pixels.show()
     time.sleep(0.02)
     non_zeros = check_for_nonzero_speed(speed_pin)
 
 while True:
     # Running indicator flashing
-    indicator_color, error_color = pixel_blinking.update()
+    indicator_color, lights_state = pixel_blinking.update()
     indicator_pixel[0] = indicator_color
     
     # Pixel writing part 2/2
@@ -147,8 +148,12 @@ while True:
             direction_color[channel] = GREEN
         index[channel] = speed_to_index(speed_pin[channel].value)
         START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
-        for i in range(START_VAL,index[channel]+START_VAL):
-            pixels[i] = direction_color[channel]
+        if index[channel] == 0:
+            if lights_state:
+                pixel[START_VAL] = direction_color[channel]
+        else:
+            for i in range(START_VAL,index[channel]+START_VAL):
+                pixels[i] = direction_color[channel]
             
         # Motor code
         if master_switch.value:
