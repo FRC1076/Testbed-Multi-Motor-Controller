@@ -4,6 +4,7 @@ import digitalio
 import analogio
 import neopixel
 import pwmio
+from CycleManager import CycleManager
 from adafruit_motor import servo as adafruit_servo
 if board.board_id == 'adafruit_feather_rp2040':
     import feather_rp2040 as hw
@@ -75,7 +76,11 @@ class PixelBlinking:
                 self.indicator_color = PURPLE
                 self.light_state = 1
         return self.indicator_color, self.light_state
+
+# Object Creation
 pixel_blinking = PixelBlinking()
+CYCLE_TIME_ms = 20
+cm = CycleManager(CYCLE_TIME_ms)
 
 # Array creation
 pwm = [None] * hw.NUM_CHANNELS
@@ -115,6 +120,8 @@ indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 # Make sure motors don't immediately start
 non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
+    cm.startCycle()
+    
     # Running indicator flashing
     indicator_color, lights_state = pixel_blinking.update()
     indicator_pixel[0] = indicator_color
@@ -128,10 +135,12 @@ while len(non_zeros) != 0:
                 pixels[i] = ORANGE
     
     pixels.show()
-    time.sleep(0.02)
     non_zeros = check_for_nonzero_speed(speed_pin)
+    cm.adjustCycle
 
 while True:
+    cm.startCycle()
+    
     # Running indicator flashing
     indicator_color, lights_state = pixel_blinking.update()
     indicator_pixel[0] = indicator_color
@@ -167,4 +176,4 @@ while True:
             print("Master Switch Off")
 
     pixels.show()
-    time.sleep(0.02)
+    cm.adjustCycle
