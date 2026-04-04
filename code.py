@@ -94,7 +94,7 @@ master_switch.pull = digitalio.Pull.UP
 
 # PWM Creation
 for (channel,pin) in enumerate(hw.PWM_OUT_PINS):
-    pwm[channel] = pwmio.PWMOut(pin,frequency=50)
+    pwm[channel] = pwmio.PWMOut(pin,frequency=hw.PWM_FREQUENCY)
     talon_speed_controller[channel] = adafruit_servo.ContinuousServo(pwm[channel])
 
 # Speed and Direction pin creation
@@ -105,7 +105,7 @@ for (channel,(A_pin,D_pin)) in enumerate(hw.POTENTIOMETER_AND_SWITCH_PINS):
     direction_pin[channel].pull = digitalio.Pull.UP
 
 # Pixel writing part 1/2
-pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, 32, brightness=0.1)
+pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.DISPLAY_BRIGHTNESS)
 pixels.auto_write = False
 pixels.fill(OFF)
 
