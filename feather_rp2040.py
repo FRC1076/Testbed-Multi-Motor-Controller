@@ -11,3 +11,7 @@ NUM_LIGHTS = 32
 NUM_CHANNELS = 2  # NUM_CHANNELS should be a factor of NUM_LIGHTS
 if NUM_CHANNELS > NUM_LIGHTS:
     raise
+
+# Other specifications
+DISPLAY_BRIGHTNESS = 0.1
+PWM_FREQUENCY = 50
