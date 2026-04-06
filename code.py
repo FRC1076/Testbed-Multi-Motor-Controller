@@ -8,6 +8,8 @@ from CycleManager import CycleManager
 from adafruit_motor import servo as adafruit_servo
 if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
+elif board.board_id == 'adafruit_feather_rp2040':
+    import feather_rp2040 as hw
 
 """
 This version is for the final, production product.
@@ -21,6 +23,7 @@ OFF = (0, 0, 0)
 ORANGE = (255,63,0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+PURPLE = (120, 0, 120)
 
 # Functions
 SPEED_PER_INDEX = 8000/hw.NUM_CHANNELS
@@ -61,16 +64,26 @@ class PixelBlinking:
     def __init__ (self):
         self.CYCLES_PER_TOGGLE = 10
         self.cycle_count = 0
-        self.indicator_color = OFF
         self.light_state = 0
-
+        if board.board_id == 'raspberry_pi_pico':
+            self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
+            self.indicator_pixel.switch_to_output()
+        elif board.board_id == 'adafruit_feather_rp2040':
+            self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
+    
     def update(self):
         self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
         if self.cycle_count == 0:
             if self.light_state:
-                self.light_state = 0
+            self.light_state = 0
+		if board.board_id == 'adafruit_feather_rp2040':
+			self.indicator_pixel[0] = OFF
             else:
                 self.light_state = 1
+		if board.board_id == 'adafruit_feather_rp2040':
+			self.indicator_pixel[0] = PURPLE
+            if board.board_id == 'raspberry_pi_pico': 
+                self.indicator_pixel = lights_state
         return self.light_state
 
 # Object Creation
@@ -105,20 +118,13 @@ pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.DISPLAY
 pixels.auto_write = False
 pixels.fill(OFF)
 
-#Running indicator initialization
-indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
-indicator_pixel.switch_to_output()
-
 # Make sure motors don't immediately start
 non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
     cm.startCycle()
-    
-    # Running indicator flashing
-    lights_state = pixel_blinking.update()
-    indicator_pixel = lights_state
 
     # Pixel writing
+    lights_state = pixel_blinking.update()
     pixels.fill(OFF)
     if lights_state:
         for channel in non_zeros:
