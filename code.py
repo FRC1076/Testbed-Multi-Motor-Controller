@@ -72,19 +72,19 @@ class PixelBlinking:
             self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
     
     def update(self):
-      self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
-      if self.cycle_count == 0:
-        if self.light_state:
-           self.light_state = 0
-           if board.board_id == 'adafruit_feather_rp2040':
-              self.indicator_pixel[0] = OFF
+        self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
+        if self.cycle_count == 0:
+            if self.light_state:
+                self.light_state = 0
+                if board.board_id == 'adafruit_feather_rp2040':
+                    self.indicator_pixel[0] = OFF
         else:
             self.light_state = 1
             if board.board_id == 'adafruit_feather_rp2040':
-               self.indicator_pixel[0] = PURPLE
-      if board.board_id == 'raspberry_pi_pico': 
-        self.indicator_pixel = self.light_state
-      return self.light_state
+                self.indicator_pixel[0] = PURPLE
+            if board.board_id == 'raspberry_pi_pico': 
+                self.indicator_pixel = self.light_state
+            return self.light_state
 
 # Object Creation
 pixel_blinking = PixelBlinking()
@@ -122,7 +122,7 @@ pixels.fill(OFF)
 non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
     cm.startCycle()
-
+    
     # Pixel writing
     lights_state = pixel_blinking.update()
     pixels.fill(OFF)
@@ -168,6 +168,6 @@ while True:
         servo[channel] = speed_to_servo(speed_pin[channel].value)
         talon_speed_controller[channel].throttle = servo[channel] * direction_sign[channel]
         print("Servo",channel,":",servo[channel] * direction_sign[channel])
-
+    
     pixels.show()
     cm.adjustCycle()
