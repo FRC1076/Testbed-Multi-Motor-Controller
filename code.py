@@ -78,9 +78,9 @@ class PixelBlinking:
            self.light_state = 0
            if board.board_id == 'adafruit_feather_rp2040':
               self.indicator_pixel[0] = OFF
-           else:
-             self.light_state = 1
-             if board.board_id == 'adafruit_feather_rp2040':
+        else:
+            self.light_state = 1
+            if board.board_id == 'adafruit_feather_rp2040':
                self.indicator_pixel[0] = PURPLE
       if board.board_id == 'raspberry_pi_pico': 
         self.indicator_pixel = self.light_state
@@ -134,6 +134,7 @@ while len(non_zeros) != 0:
                 pixels[i] = ORANGE
     
     pixels.show()
+    print ("Light State:", lights_state)
     non_zeros = check_for_nonzero_speed(speed_pin)
     cm.adjustCycle()
 
@@ -158,7 +159,7 @@ while True:
         START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
         if index[channel] == 0:
             if lights_state:
-                pixel[START_VAL] = direction_color[channel]
+                pixels[START_VAL] = direction_color[channel]
         else:
             for i in range(START_VAL,index[channel]+START_VAL):
                 pixels[i] = direction_color[channel]
