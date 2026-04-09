@@ -131,10 +131,9 @@ while len(non_zeros) != 0:
             index[channel] = speed_to_index(speed_pin[channel].value)
             START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
             for i in range(START_VAL,index[channel]+START_VAL):
-                pixels[i] = ORANGE
+                pixels[hw.LIGHTS_ORDER[i]] = ORANGE
     
     pixels.show()
-    print ("Light State:", lights_state)
     non_zeros = check_for_nonzero_speed(speed_pin)
     cm.adjustCycle()
 
@@ -159,10 +158,10 @@ while True:
         START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
         if index[channel] == 0:
             if lights_state:
-                pixels[START_VAL] = direction_color[channel]
+                pixels[hw.LIGHTS_ORDER[START_VAL]] = direction_color[channel]
         else:
             for i in range(START_VAL,index[channel]+START_VAL):
-                pixels[i] = direction_color[channel]
+                pixels[hw.LIGHTS_ORDER[i]] = direction_color[channel]
             
         # Motor code
         servo[channel] = speed_to_servo(speed_pin[channel].value)
