@@ -1,7 +1,7 @@
 import board
 
 # Pins
-PWM_OUT_PINS = [board.GP2,board.GP14]
+PWM_OUT_PINS = [board.GP14,board.GP2]
 POTENTIOMETER_AND_SWITCH_PINS = [(board.GP26_A0,board.GP18),(board.GP27_A1,board.GP19)]
 INDICATOR_LIGHT_PIN = board.LED
 NEOPIXEL_PIN = board.GP22
