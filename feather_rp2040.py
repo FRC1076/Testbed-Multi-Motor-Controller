@@ -1,5 +1,9 @@
 import board
 
+"""
+Hardware specifications for the Double Wood Board testbed.
+"""
+
 # Pins
 MASTER_SWITCH_PIN = board.D9
 PWM_OUT_PINS = [board.D24,board.D25]
