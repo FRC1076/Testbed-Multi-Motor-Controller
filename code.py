@@ -15,14 +15,14 @@ elif board.board_id == 'adafruit_feather_rp2040':
 This version is for the final, production product.
 It includes two controls (LEFT and RIGHT).
 Each side has a FORWARD/REVERSE toggle switch to specify the direction of the motor.
-Contains a safety feature that displays the speed in blinking orange if either motor is on at the start, and refuses to power the motors until the condition is corrected.
+Contains a safety feature that displays the speed in a blinking error color if either motor is on at the start, and refuses to power the motors until the condition is corrected.
 """
 
 # Colors
 OFF = (0, 0, 0)
-ORANGE = (255,63,0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
+FORWARD_COLOR = (0, 255, 0)
+REVERSE_COLOR = (255, 0, 0)
+ERROR_COLOR = (255,127,0)
 PURPLE = (120, 0, 120)
 
 # Functions
@@ -133,7 +133,7 @@ while len(non_zeros) != 0:
             index[channel] = speed_to_index(speed_pin[channel].value)
             START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
             for i in range(START_VAL,index[channel]+START_VAL):
-                pixels[hw.LIGHTS_ORDER[i]] = ORANGE
+                pixels[hw.LIGHTS_ORDER[i]] = ERROR_COLOR
     
     pixels.show()
     non_zeros = check_for_nonzero_speed(speed_pin)
@@ -152,10 +152,10 @@ while True:
         # NeoFeather lights
         if direction_pin[channel].value:
             direction_sign[channel] = -1
-            direction_color[channel] = RED
+            direction_color[channel] = REVERSE_COLOR
         else:
             direction_sign[channel] = 1
-            direction_color[channel] = GREEN
+            direction_color[channel] = FORWARD_COLOR
         index[channel] = speed_to_index(speed_pin[channel].value)
         START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
         if index[channel] == 0:
