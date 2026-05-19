@@ -127,6 +127,7 @@ while len(non_zeros) != 0:
     
     # Pixel writing
     lights_state = pixel_blinking.update()
+    indicator_pixel = lights_state
     pixels.fill(OFF)
     if lights_state:
         for channel in non_zeros:
