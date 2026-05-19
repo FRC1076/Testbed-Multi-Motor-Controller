@@ -83,7 +83,7 @@ class PixelBlinking:
             else:
                 self.light_state = 1
                 if board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = PURPLE
+                    self.indicator_pixel[0] = self.PURPLE
                 elif board.board_id == 'raspberry_pi_pico': 
                     self.indicator_pixel = self.light_state
         return self.light_state
