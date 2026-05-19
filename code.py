@@ -23,7 +23,6 @@ OFF = (0, 0, 0)
 FORWARD_COLOR = (0, 255, 0)
 REVERSE_COLOR = (255, 0, 0)
 ERROR_COLOR = (255,127,0)
-PURPLE = (120, 0, 120)
 
 # Functions
 SPEED_PER_INDEX = 8000/hw.NUM_CHANNELS
@@ -65,6 +64,7 @@ class PixelBlinking:
         self.CYCLES_PER_TOGGLE = 10
         self.cycle_count = 0
         self.light_state = 0
+        self.PURPLE = (120, 0, 120)
         if board.board_id == 'raspberry_pi_pico':
             self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
             self.indicator_pixel.switch_to_output()
@@ -78,8 +78,8 @@ class PixelBlinking:
                 self.light_state = 0
                 if board.board_id == 'adafruit_feather_rp2040':
                     self.indicator_pixel[0] = OFF
-                elif board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = OFF
+                elif board.board_id == 'raspberry_pi_pico':
+                    self.indicator_pixel = self.light_state
             else:
                 self.light_state = 1
                 if board.board_id == 'adafruit_feather_rp2040':
