@@ -10,6 +10,7 @@ if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
 elif board.board_id == 'adafruit_feather_rp2040':
     import feather_rp2040 as hw
+from Display import FullDisplay, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay
 
 """
 This version is for the final, production product.
@@ -18,22 +19,9 @@ Each side has a FORWARD/REVERSE toggle switch to specify the direction of the mo
 Contains a safety feature that displays the speed in a blinking error color if either motor is on at the start, and refuses to power the motors until the condition is corrected.
 """
 
-# Colors
-OFF = (0, 0, 0)
-FORWARD_COLOR = (0, 255, 0)
-REVERSE_COLOR = (255, 0, 0)
-ERROR_COLOR = (255,127,0)
-
 # Functions
-SPEED_PER_INDEX = 8000/hw.NUM_CHANNELS
 SERVO_PER_SPEED = 65535.0
 DEADBAND = 0.01
-
-def speed_to_index(speed):
-    """
-    Convert the raw speed value into pixel index
-    """
-    return speed // SPEED_PER_INDEX
 
 def check_for_nonzero_speed(speed_pins):
     """
@@ -56,50 +44,18 @@ def speed_to_servo(speed):
     else:
         return servo
 
-class PixelBlinking:
-    """
-    Make pixels blink while not slowing cycles
-    """
-    def __init__ (self):
-        self.CYCLES_PER_TOGGLE = 10
-        self.cycle_count = 0
-        self.light_state = 0
-        self.PURPLE = (120, 0, 120)
-        if board.board_id == 'raspberry_pi_pico':
-            self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
-            self.indicator_pixel.switch_to_output()
-        elif board.board_id == 'adafruit_feather_rp2040':
-            self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
-    
-    def update(self):
-        self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
-        if self.cycle_count == 0:
-            if self.light_state:
-                self.light_state = 0
-                if board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = OFF
-                elif board.board_id == 'raspberry_pi_pico':
-                    self.indicator_pixel = self.light_state
-            else:
-                self.light_state = 1
-                if board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = self.PURPLE
-                elif board.board_id == 'raspberry_pi_pico': 
-                    self.indicator_pixel = self.light_state
-        return self.light_state
-
 # Object Creation
-pixel_blinking = PixelBlinking()
 CYCLE_TIME_ms = 20
 cm = CycleManager(CYCLE_TIME_ms)
+display = FullDisplay(PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw)
 
 # Array creation
 pwm = [None] * hw.NUM_CHANNELS
 talon_speed_controller = [None] * hw.NUM_CHANNELS
 speed_pin = [None] * hw.NUM_CHANNELS
 direction_pin = [None] * hw.NUM_CHANNELS
-direction_color = [None] * hw.NUM_CHANNELS
 direction_sign = [None] * hw.NUM_CHANNELS
+servos_and_directions = [None] * hw.NUM_CHANNELS
 servo = [None] * hw.NUM_CHANNELS
 index = [None] * hw.NUM_CHANNELS
 
@@ -115,61 +71,30 @@ for (channel,(A_pin,D_pin)) in enumerate(hw.POTENTIOMETER_AND_SWITCH_PINS):
     direction_pin[channel].direction = digitalio.Direction.INPUT
     direction_pin[channel].pull = digitalio.Pull.UP
 
-# Pixel initialization
-pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.DISPLAY_BRIGHTNESS)
-pixels.auto_write = False
-pixels.fill(OFF)
-
 # Make sure motors don't immediately start
 non_zeros = check_for_nonzero_speed(speed_pin)
 while len(non_zeros) != 0:
     cm.startCycle()
-    
-    # Pixel writing
-    lights_state = pixel_blinking.update()
-    indicator_pixel = lights_state
-    pixels.fill(OFF)
-    if lights_state:
-        for channel in non_zeros:
-            index[channel] = speed_to_index(speed_pin[channel].value)
-            START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
-            for i in range(START_VAL,index[channel]+START_VAL):
-                pixels[hw.LIGHTS_ORDER[i]] = ERROR_COLOR
-    
-    pixels.show()
+
+    for channel in range (hw.NUM_CHANNELS):        
+        servo[channel] = speed_to_servo(speed_pin[channel].value)
+    display.display_error(servo, non_zeros)
     non_zeros = check_for_nonzero_speed(speed_pin)
     cm.adjustCycle()
 
 while True:
     cm.startCycle()
     
-    # Running indicator flashing
-    lights_state = pixel_blinking.update()
-    indicator_pixel = lights_state
-    
-    # Pixel writing
-    pixels.fill(OFF)
-    for channel in range (hw.NUM_CHANNELS):
-        # NeoFeather lights
+    # Motor code
+    for channel in range (hw.NUM_CHANNELS):        
         if direction_pin[channel].value:
-            direction_sign[channel] = -1
-            direction_color[channel] = REVERSE_COLOR
+            direction_sign = -1
         else:
-            direction_sign[channel] = 1
-            direction_color[channel] = FORWARD_COLOR
-        index[channel] = speed_to_index(speed_pin[channel].value)
-        START_VAL = int(channel * (hw.NUM_LIGHTS / hw.NUM_CHANNELS))
-        if index[channel] == 0:
-            if lights_state:
-                pixels[hw.LIGHTS_ORDER[START_VAL]] = direction_color[channel]
-        else:
-            for i in range(START_VAL,index[channel]+START_VAL):
-                pixels[hw.LIGHTS_ORDER[i]] = direction_color[channel]
-            
-        # Motor code
-        servo[channel] = speed_to_servo(speed_pin[channel].value)
-        talon_speed_controller[channel].throttle = servo[channel] * direction_sign[channel]
-        print("Servo",channel,":",servo[channel] * direction_sign[channel])
+            direction_sign = 1
+        servo = speed_to_servo(speed_pin[channel].value)
+        talon_speed_controller[channel].throttle = servo * direction_sign
+        
+        servos_and_directions[channel] = (servo, direction_sign)
+    display.display_speed(servos_and_directions)
     
-    pixels.show()
     cm.adjustCycle()
