@@ -1,3 +1,5 @@
+# Needs to be updated to have the same variables as raspberry_pi_pico.py
+
 import board
 
 """
