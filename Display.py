@@ -47,6 +47,9 @@ class PixelBlinking:
 class OLEDDisplay:
     def __init__(self, hw):
         self.hw = hw
+        self.speeds = [None] * hw.NUM_CHANNELS
+        self.directions = [None] * hw.NUM_CHANNELS
+        
         # Clear Display
         displayio.release_displays()
     
@@ -81,27 +84,40 @@ class OLEDDisplay:
         bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=1+int(self.hw.OLED_DISPLAY_HEIGHT/4))
         self.splash.append(bottom_inner_sprite)
 
-    def print_direction(self, directions):
-        for (side, direction) in enumerate(directions):
-            if directions[side] == 1:
+    def print_speed(self, speeds_and_directions):
+        self.bottom_clear()
+        for (side, (speed, direction)) in enumerate(speeds_and_directions):
+                self.speeds[side] = speed
+                self.directions[side] = direction
+        self.show_speed()
+        self.show_direction()
+
+    def print_error(self, speeds):
+        self.speeds = speeds
+        self.bottom_clear()
+        self.show_error()
+        self.show_speed()
+    
+    def show_direction(self):
+        for (side, direction) in enumerate(self.directions):
+            if self.directions[side] == 1:
                 direction_text = "Forward"
             else:
                 direction_text = "Reverse"
-        direction_sprite = label.Label(terminalio.FONT, text=direction_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[0])
-        self.splash.append(direction_sprite)
+            direction_sprite = label.Label(terminalio.FONT, text=direction_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[0])
+            self.splash.append(direction_sprite)
 
-    def print_error(self):
-        error_text = "Set Servos to 0 to start"
+    def show_error(self):
+        error_text = "Zero Speeds, Please"
         error_sprite = label.Label(terminalio.FONT, text=error_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[0], y=self.hw.OLED_VERTICALS[0])
         self.splash.append(error_sprite)
 
-    def print_speed(self, directions, speeds):
-        self.bottom_clear()
-        for (side, speed) in enumerate(speeds):
+    def show_speed(self):
+        for (side, speed) in enumerate(self.speeds):
             speed_text = f"{speed} %"
             speed_sprite = label.Label(terminalio.FONT, text=speed_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[1])
             
-            bar_bitmap = displayio.Bitmap(round(self.hw.OLED_BAR_WIDTH*speed/100), 8, 1)
+            bar_bitmap = displayio.Bitmap(round(self.hw.OLED_BAR_WIDTH * speed/100), 8, 1)
             bar_sprite = displayio.TileGrid(bar_bitmap, pixel_shader=self.colored, x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[2])
             
             self.splash.append(speed_sprite)
@@ -180,8 +196,7 @@ class FullDisplay:
     def display_error(self, speeds, non_zeros):
         light_state = self.lights_blink.update()
         if "OLED" in self.display_types:
-            self.oled_display.print_speed(speeds)
-            self.oled_display.print_error()
+            self.oled_display.print_error(speeds)
         if "NEO_PIXEL" in self.display_types:
             self.neo_pixel_display.show_error(speeds, light_state)
         if "UART" in self.display_types:
@@ -190,11 +205,7 @@ class FullDisplay:
     def display_speed(self, speeds_and_directions):
         light_state = self.lights_blink.update()
         if "OLED" in self.display_types:
-            for (side, (speed, direction)) in enumerate(speeds_and_directions):
-                speeds[side] = speed
-                directions[side] = direction
-            self.oled_display.print_speed(speeds)
-            self.oled_display.print_direction(directions)
+            self.oled_display.print_speed(speeds_and_directions)
         if "NEO_PIXEL" in self.display_types:
             self.neo_pixel_display.show_speed(speeds_and_directions, light_state)
         if "UART" in self.display_types:
