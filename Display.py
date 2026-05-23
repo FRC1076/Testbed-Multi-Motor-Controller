@@ -117,7 +117,7 @@ class NEOPixelDisplay:
         self.ERROR_COLOR = (255,127,0)
         
         # Display init
-        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.DISPLAY_BRIGHTNESS)
+        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.NEO_PIXEL_DISPLAY_BRIGHTNESS)
         self.pixels.auto_write = False
         self.pixels.fill(self.OFF)
 
@@ -134,7 +134,7 @@ class NEOPixelDisplay:
                 index = self.speed_to_index(speed)
                 START_VAL = int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
                 for i in range(START_VAL,index+START_VAL):
-                    self.pixels[self.hw.LIGHTS_ORDER[i]] = self.ERROR_COLOR
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.ERROR_COLOR
         self.pixels.show()
 
     def show_speed(self, speeds_and_directions, lights_state):
@@ -149,10 +149,10 @@ class NEOPixelDisplay:
             START_VAL = int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
             if index == 0:
                 if lights_state:
-                    self.pixels[self.hw.LIGHTS_ORDER[START_VAL]] = direction_color
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[START_VAL]] = direction_color
             else:
                 for i in range(START_VAL,index+START_VAL):
-                    self.pixels[self.hw.LIGHTS_ORDER[i]] = direction_color
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
         self.pixels.show()
 
 class UARTDisplay:
