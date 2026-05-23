@@ -51,7 +51,7 @@ class OLEDDisplay:
         displayio.release_displays()
     
         # I2C Bus and Display Creation
-        i2c = busio.I2C(hw.scl_pin, hw.sda_pin)
+        i2c = busio.I2C(hw.OLED_SCL_PIN, hw.OLED_SDA_PIN)
         self.display_bus = I2CDisplayBus(i2c, device_address=0x3C)
         self.display = adafruit_displayio_ssd1306.SSD1306(self.display_bus, width=hw.OLED_DISPLAY_WIDTH, height=hw.OLED_DISPLAY_HEIGHT)
         self.splash = displayio.Group()
