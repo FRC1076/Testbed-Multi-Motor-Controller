@@ -10,7 +10,7 @@ if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
 elif board.board_id == 'adafruit_feather_rp2040':
     import feather_rp2040 as hw
-from Display import FullDisplay, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay
+from Display import MultiDisplay, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay
 
 """
 This version is for the final, production product.
@@ -47,7 +47,7 @@ def speed_to_servo(speed):
 # Object Creation
 CYCLE_TIME_ms = 20
 cm = CycleManager(CYCLE_TIME_ms)
-display = FullDisplay(PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw)
+display = MultiDisplay(PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw)
 
 # Array creation
 pwm = [None] * hw.NUM_CHANNELS
