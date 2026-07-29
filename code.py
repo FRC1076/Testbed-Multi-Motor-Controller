@@ -10,7 +10,7 @@ if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
 elif board.board_id == 'adafruit_feather_rp2040':
     import feather_rp2040 as hw
-from Display import MultiDisplay, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay
+import Display as disp
 
 """
 This version is for the final, production product.
@@ -47,7 +47,6 @@ def speed_to_servo(speed):
 # Object Creation
 CYCLE_TIME_ms = 20
 cm = CycleManager(CYCLE_TIME_ms)
-display = MultiDisplay(PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw)
 
 # Array creation
 pwm = [None] * hw.NUM_CHANNELS
@@ -78,7 +77,7 @@ while len(non_zeros) != 0:
 
     for channel in range (hw.NUM_CHANNELS):        
         servo[channel] = speed_to_servo(speed_pin[channel].value)
-    display.display_error(servo, non_zeros)
+    disp.display.display_error(servo, non_zeros)
     non_zeros = check_for_nonzero_speed(speed_pin)
     cm.adjustCycle()
 
@@ -86,7 +85,7 @@ while True:
     cm.startCycle()
     
     # Motor code
-    for channel in range (hw.NUM_CHANNELS):        
+    for channel in range (hw.NUM_CHANNELS):
         if direction_pin[channel].value:
             direction_sign = -1
         else:
@@ -95,6 +94,6 @@ while True:
         talon_speed_controller[channel].throttle = servo * direction_sign
         
         servos_and_directions[channel] = (servo, direction_sign)
-    display.display_speed(servos_and_directions)
+    disp.display.display_speed(servos_and_directions)
     
     cm.adjustCycle()
