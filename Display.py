@@ -6,48 +6,148 @@ from i2cdisplaybus import I2CDisplayBus
 import busio
 import neopixel
 import adafruit_displayio_ssd1306
-import digitalio
 if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
+    import digitalio
 elif board.board_id == 'adafruit_feather_rp2040':
     import feather_rp2040 as hw
+import display_config as cfg
 
-class PixelBlinking:
-    """
-    Make pixels blink while not slowing cycles
-    """
-    def __init__ (self):
-        self.CYCLES_PER_TOGGLE = 10
-        self.cycle_count = 0
-        self.light_state = 0
-        if board.board_id == 'raspberry_pi_pico':
-            self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
-            self.indicator_pixel.switch_to_output()
-            self.PURPLE = (120, 0, 120)
-            self.OFF = (0,0,0)
-        elif board.board_id == 'adafruit_feather_rp2040':
+class IndicatorLight:
+    def __init__(self, hw, feather=True)
+        # This is set up to be a base class and to work on a Feather.
+        if feather:
             self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
 
-    def update(self):
-        self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_TOGGLE
-        if self.cycle_count == 0:
-            if self.light_state:
-                self.light_state = 0
-                if board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = self.OFF
-                elif board.board_id == 'raspberry_pi_pico':
-                    self.indicator_pixel = self.light_state
-            else:
-                self.light_state = 1
-                if board.board_id == 'adafruit_feather_rp2040':
-                    self.indicator_pixel[0] = self.PURPLE
-                elif board.board_id == 'raspberry_pi_pico':
-                    self.indicator_pixel = self.light_state
-        return self.light_state
+    def update_light(self, light_state):
+        self.indicator_pixel = light_state
 
-class OLEDDisplay:
+    def show_on(self):
+        self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_BLINK
+        if self.cycle_count == 0:
+            self.light_state = not self.light_state
+            if self.light_state:
+                self.update_light(True)
+            else:
+                self.update_light(False)
+
+class PiPicoIndicatorLight(IndicatorLight):
     def __init__(self, hw):
+        super(PiPicoIndicatorLight, self, feather=False).__init__()
+        self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
+        self.indicator_pixel.switch_to_output()
+        self.ON = (120, 0, 120) # Purple
+        self.OFF = (0,0,0)
+
+    def update_light(self, light_state):
+        if light_state:
+            COLOR = self.ON
+        else:
+            COLOR = self.OFF
+        self.indicator_pixel[0] = COLOR
+
+# Indicator Light Factory
+if board.board_id == 'raspberry_pi_pico':
+    indicator = PiPicoIndicatorLight(hw)
+elif board.board_id == 'adafruit_feather_rp2040':
+    indicator = IndicatorLight(hw)
+
+class Display:
+    def __init__(self, logging=False, blinking=False, cycles_per_blink=10):
+        self.logging = logging
+        if blinking:
+            self.CYCLES_PER_BLINK = cycles_per_blink
+            self.cycle_count = 0
+            self.light_state = FALSE
+    
+    def update_blink(self):
+        if blinking:
+            self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_BLINK
+            if self.cycle_count == 0:
+                self.light_state = not self.light_state
+           return self.light_state
+        else:
+            print("Blinking off")
+            return 0
+
+    def log_error(self, non_zeros):
+        if self.logging:
+           print("Set Servo(s)", non_zeros, "to zero to start.")
+
+    def log_speed(self, speeds_and_directions):
+        if self.logging:
+            for (channel, (speed, direction)) in enumerate(speeds_and_directions):
+                print(f"Servo {channel}: {speed * direction}")
+
+    def print_error(self, speeds, non_zeros):
+        self.log_error(non_zeros)
+
+    def print_speed(self, speeds_and_directions):
+        self.log_speed(speeds_and_directions)
+
+class NEOPixelDisplay(Display):
+    def __init__(self, hw, cfg):
+        super(NEOPixelDisplay, self, blinking=True).__init__()
+
+        # Colors
         self.hw = hw
+        self.cfg = cfg
+        self.OFF = (0, 0, 0)
+
+        # Display init
+        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NEO_PIXEL_NUM_LIGHTS, brightness=cfg.NEO_PIXEL_DISPLAY_BRIGHTNESS)
+        self.pixels.auto_write = False
+        self.pixels.fill(self.OFF)
+
+    def speed_to_index(self, speed):
+        """
+        Convert the speed percentage into pixel index
+        """
+        return speed * self.hw.NEO_PIXEL_NUM_LIGHTS / self.hw.NUM_CHANNELS
+
+    def start_val(self, channel)
+        """
+        Calculate start value for the display
+        """
+        return int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
+
+    def print_error(self, speeds, non_zeros):
+        self.log_error(non_zeros)
+        self.pixels.fill(self.OFF)
+        light_state = self.update_blink()
+        if light_state:
+            for (channel, speed) in enumerate(speeds):
+                index = self.speed_to_index(speed)
+                START_VAL = self.start_val(channel)
+                for i in range(START_VAL,index+START_VAL):
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_ERROR_COLOR
+        self.pixels.show()
+
+    def print_speed(self, speeds_and_directions):
+        self.log_speed(speeds_and_directions)
+        self.pixels.fill(self.OFF)
+        for (channel, (speed, direction)) in enumerate (speeds_and_directions):
+            # NeoFeather lights
+            if direction == 1:
+                direction_color = self.cfg.NEO_FORWARD_COLOR
+            else:
+                direction_color = self.cfg.NEO_REVERSE_COLOR
+            index = self.speed_to_index(speed)
+            START_VAL = self.start_val(channel)
+            if index == 0:
+                light_state = self.update_blink()
+                if light_state:
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[START_VAL]] = direction_color
+            else:
+                for i in range(START_VAL,index+START_VAL):
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
+        self.pixels.show()
+
+class OLEDDisplay(Display):
+    def __init__(self, hw, cfg):
+        super(OLEDDisplay, self).__init__()
+        self.hw = hw
+        self.cfg = cfg
         self.speeds = [None] * hw.NUM_CHANNELS
         self.directions = [None] * hw.NUM_CHANNELS
 
@@ -76,28 +176,14 @@ class OLEDDisplay:
         self.bottom_clear()
 
     def top_clear(self):
-        top_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH-2, int(self.hw.OLED_DISPLAY_HEIGHT/4)-2, 1)
+        top_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (OLED_BORDER_WIDTH * 2), self.cfg.OLED_TOP_HEIGHT - (OLED_BORDER_WIDTH * 2), 1)
         top_inner_sprite = displayio.TileGrid(top_inner_bitmap, pixel_shader=self.blank, x=1, y=1)
         self.splash.append(top_inner_sprite)
 
     def bottom_clear(self):
-        bottom_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH-2, int(self.hw.OLED_DISPLAY_HEIGHT*3/4)-2, 1)
-        bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=1+int(self.hw.OLED_DISPLAY_HEIGHT/4))
+        bottom_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (OLED_BORDER_WIDTH * 2), self.hw.OLED_BOTTOM_HEIGHT - (OLED_BORDER_WIDTH * 2), 1)
+        bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=(1 + self.cfg.OLED_TOP_HEIGHT)
         self.splash.append(bottom_inner_sprite)
-
-    def print_speed(self, speeds_and_directions, light_state):
-        self.bottom_clear()
-        for (side, (speed, direction)) in enumerate(speeds_and_directions):
-                self.speeds[side] = speed
-                self.directions[side] = direction
-        self.show_speed()
-        self.show_direction()
-
-    def print_error(self, speeds, light_state, non_zeros):
-        self.speeds = speeds
-        self.bottom_clear()
-        self.show_error()
-        self.show_speed()
 
     def show_direction(self):
         for (side, direction) in enumerate(self.directions):
@@ -124,106 +210,47 @@ class OLEDDisplay:
             self.splash.append(speed_sprite)
             self.splash.append(bar_sprite)
 
-class NEOPixelDisplay:
-    def __init__(self, hw):
-        # Colors
-        self.hw = hw
-        self.OFF = (0, 0, 0)
-        self.FORWARD_COLOR = (0, 255, 0)
-        self.REVERSE_COLOR = (255, 0, 0)
-        self.ERROR_COLOR = (255,127,0)
+    def print_error(self, speeds, non_zeros):
+        self.log_error(non_zeros)
+        self.speeds = speeds
+        self.bottom_clear()
+        self.show_error()
+        self.show_speed()
 
-        # Display init
-        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NUM_LIGHTS, brightness=hw.NEO_PIXEL_DISPLAY_BRIGHTNESS)
-        self.pixels.auto_write = False
-        self.pixels.fill(self.OFF)
+    def print_speed(self, speeds_and_directions):
+        self.log_speed(speeds_and_directions)
+        self.bottom_clear()
+        for (side, (speed, direction)) in enumerate(speeds_and_directions):
+            self.speeds[side] = speed
+            self.directions[side] = direction
+        self.show_speed()
+        self.show_direction()
 
-    def speed_to_index(self, speed):
-        """
-        Convert the speed percentage into pixel index
-        """
-        return speed * self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS
-
-    def print_error(self, speeds, light_state, non_zeros):
-        self.pixels.fill(self.OFF)
-        if light_state:
-            for (channel, speed) in enumerate(speeds):
-                index = self.speed_to_index(speed)
-                START_VAL = int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
-                for i in range(START_VAL,index+START_VAL):
-                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.ERROR_COLOR
-        self.pixels.show()
-
-    def print_speed(self, speeds_and_directions, lights_state):
-        self.pixels.fill(self.OFF)
-        for (channel, (speed, direction)) in enumerate (speeds_and_directions):
-            # NeoFeather lights
-            if direction == 1:
-                direction_color = self.FORWARD_COLOR
-            else:
-                direction_color = self.REVERSE_COLOR
-            index = self.speed_to_index(speed)
-            START_VAL = int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
-            if index == 0:
-                if lights_state:
-                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[START_VAL]] = direction_color
-            else:
-                for i in range(START_VAL,index+START_VAL):
-                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
-        self.pixels.show()
-
-class UARTDisplay:
-    # def __init__(self):
-        # I don't know what, if anything, to put here
-
-    def print_error(self, speeds, light_state, non_zeros):
-        print("Set Servo(s)", non_zeros, "to zero to start.")
-
-    def print_speed(self, speeds_and_directions, light_state):
-        for (channel, (speed, direction)) in enumerate(speeds_and_directions):
-            print(f"Servo {channel}: {speed * direction}")
-
-class SingleDisplay:
-    # Needs testing and debugging
-    def __init__(self, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw):
-        self.lights_blink = PixelBlinking()
-        if "OLED" in hw.DISPLAY_TYPES:
-            self.display = OLEDDisplay(hw)
-        if "NEO_PIXEL" in hw.DISPLAY_TYPES:
-            self.display = NEOPixelDisplay(hw)
-        if "UART" in hw.DISPLAY_TYPES:
-            self.display = UARTDisplay()
-
-    def display_error(self, speeds, non_zeros):
-        light_state = self.lights_blink.update()
-        self.display.print_error(speeds, light_state, non_zeros)
-
-    def display_speed(self, speeds_and_directions):
-        light_state = self.lights_blink.update()
-        self.display.print_speed(speeds_and_directions, light_state)
-
-class MultiDisplay:
-    def __init__(self, PixelBlinking, OLEDDisplay, NEOPixelDisplay, UARTDisplay, hw):
-        self.lights_blink = PixelBlinking()
+class DisplayConstructor:
+    def __init__(self, hw, cfg, oled_display, neo_pixel_display, indicator_light):
+        self.indicator = indicator_light
         self.NUM_DISPLAYS = len(hw.DISPLAY_TYPES)
-        i=0
         self.display = [None] * self.NUM_DISPLAYS
-        if "OLED" in hw.DISPLAY_TYPES:
-            self.display[i] = OLEDDisplay(hw)
-            i += 1
+        i=0
+        logging_state = True
         if "NEO_PIXEL" in hw.DISPLAY_TYPES:
-            self.display[i] = NEOPixelDisplay(hw)
+            self.display[i] = displays.neo_pixel_display(hw, cfg, logging=logging_state)
             i += 1
-        if "UART" in hw.DISPLAY_TYPES:
-            self.display[i] = UARTDisplay()
+            logging_state = False
+        if "OLED" in hw.DISPLAY_TYPES:
+            self.display[i] = displays.oled_display(hw, cfg, logging=logging_state)
             i += 1
+            logging_state = False
 
     def display_error(self, speeds, non_zeros):
-        light_state = self.lights_blink.update()
+        self.indicator.show_on()
         for i in range(self.NUM_DISPLAYS):
-            self.display[i].print_error(speeds, light_state, non_zeros)
+            self.display[i].print_error(speeds, non_zeros)
 
     def display_speed(self, speeds_and_directions):
-        light_state = self.lights_blink.update()
+        self.indicator.show_on()
         for i in range(self.NUM_DISPLAYS):
-            self.display[i].print_speed(speeds_and_directions, light_state)
+            self.display[i].print_speed(speeds_and_directions)
+
+# This is here so I don't have to import all this into the main code just to do this there
+display = DisplayConstructor(hw, cfg, OLEDDisplay, NEOPixelDisplay, indicator) 
