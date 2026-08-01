@@ -1,3 +1,4 @@
+import board
 if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
 elif board.board_id == 'adafruit_feather_rp2040':
@@ -28,4 +29,4 @@ OLED_VERTICALS =
 for channel in range(hw.NUM_CHANNELS):
     OLED_HORIZONTALS[channel] = OLED_SPACING + int(channel * hw.OLED_WIDTH / hw.NUM_CHANNELS)       # Currently 4 and 68
 for i in range(OLED_NUM_VERTICALS):
-     OLED_VERTICALS[i] = OLED_TOP_HEIGHT + ((1 + (i * 2)) * OLED_SPACING) + (i *OLED_TEXT_HEIGHT)       # Currently 24, 40, and 52
+    OLED_VERTICALS[i] = OLED_TOP_HEIGHT + ((1 + (i * 2)) * OLED_SPACING) + (i *OLED_TEXT_HEIGHT)       # Currently 24, 40, and 52
