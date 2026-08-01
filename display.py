@@ -24,7 +24,7 @@ class IndicatorLight:
             self.indicator_pixel.switch_to_output()
             
     def update_light(self, light_state):
-        self.indicator_pixel = light_state
+        self.indicator_pixel.value = light_state
 
     def show_on(self):
         self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_BLINK
