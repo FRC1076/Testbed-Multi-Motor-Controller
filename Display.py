@@ -14,11 +14,15 @@ elif board.board_id == 'adafruit_feather_rp2040':
 import display_config as cfg
 
 class IndicatorLight:
-    def __init__(self, hw, feather=True)
-        # This is set up to be a base class and to work on a Feather.
-        if feather:
-            self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
-
+    def __init__(self, hw, pi_pico=True, cycles_per_toggle=10):
+        # This is set up to be a base class and to work on a Pi Pico.
+        self.cycle_count = 0
+        self.CYCLES_PER_BLINK = cycles_per_toggle
+        self.light_state = False
+        if pi_pico:
+            self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
+            self.indicator_pixel.switch_to_output()
+            
     def update_light(self, light_state):
         self.indicator_pixel = light_state
 
@@ -31,12 +35,11 @@ class IndicatorLight:
             else:
                 self.update_light(False)
 
-class PiPicoIndicatorLight(IndicatorLight):
+class FeatherIndicatorLight(IndicatorLight):
     def __init__(self, hw):
-        super(PiPicoIndicatorLight, self, feather=False).__init__()
-        self.indicator_pixel = digitalio.DigitalInOut(hw.INDICATOR_LIGHT_PIN)
-        self.indicator_pixel.switch_to_output()
-        self.ON = (120, 0, 120) # Purple
+        super().__init__(hw, pi_pico=False)
+        self.indicator_pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=100)
+        self.ON = (127, 0, 127) # Purple
         self.OFF = (0,0,0)
 
     def update_light(self, light_state):
@@ -48,24 +51,27 @@ class PiPicoIndicatorLight(IndicatorLight):
 
 # Indicator Light Factory
 if board.board_id == 'raspberry_pi_pico':
-    indicator = PiPicoIndicatorLight(hw)
-elif board.board_id == 'adafruit_feather_rp2040':
     indicator = IndicatorLight(hw)
+elif board.board_id == 'adafruit_feather_rp2040':
+    indicator = FeatherIndicatorLight(hw)
 
 class Display:
-    def __init__(self, logging=False, blinking=False, cycles_per_blink=10):
+    def __init__(self, logging=False, blinking=False, cycles_per_toggle=10):
         self.logging = logging
-        if blinking:
-            self.CYCLES_PER_BLINK = cycles_per_blink
+        self.blinking = blinking
+        if self.blinking:
+            self.CYCLES_PER_BLINK = cycles_per_toggle
             self.cycle_count = 0
-            self.light_state = FALSE
+            self.light_state = False
+            print("Blinking on")
+            print("Cycles per toggle:", cycles_per_toggle) 
     
     def update_blink(self):
-        if blinking:
+        if self.blinking:
             self.cycle_count = (self.cycle_count + 1) % self.CYCLES_PER_BLINK
             if self.cycle_count == 0:
                 self.light_state = not self.light_state
-           return self.light_state
+            return self.light_state
         else:
             print("Blinking off")
             return 0
@@ -86,8 +92,8 @@ class Display:
         self.log_speed(speeds_and_directions)
 
 class NEOPixelDisplay(Display):
-    def __init__(self, hw, cfg):
-        super(NEOPixelDisplay, self, blinking=True).__init__()
+    def __init__(self, hw, cfg, logging):
+        super().__init__(logging, True)
 
         # Colors
         self.hw = hw
@@ -105,11 +111,11 @@ class NEOPixelDisplay(Display):
         """
         return speed * self.hw.NEO_PIXEL_NUM_LIGHTS / self.hw.NUM_CHANNELS
 
-    def start_val(self, channel)
+    def start_val(self, channel):
         """
         Calculate start value for the display
         """
-        return int(channel * (self.hw.NUM_LIGHTS / self.hw.NUM_CHANNELS))
+        return int(channel * (self.hw.NEO_PIXEL_NUM_LIGHTS / self.hw.NUM_CHANNELS))
 
     def print_error(self, speeds, non_zeros):
         self.log_error(non_zeros)
@@ -144,8 +150,8 @@ class NEOPixelDisplay(Display):
         self.pixels.show()
 
 class OLEDDisplay(Display):
-    def __init__(self, hw, cfg):
-        super(OLEDDisplay, self).__init__()
+    def __init__(self, hw, cfg, logging):
+        super().__init__(logging)
         self.hw = hw
         self.cfg = cfg
         self.speeds = [None] * hw.NUM_CHANNELS
@@ -182,7 +188,7 @@ class OLEDDisplay(Display):
 
     def bottom_clear(self):
         bottom_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (OLED_BORDER_WIDTH * 2), self.hw.OLED_BOTTOM_HEIGHT - (OLED_BORDER_WIDTH * 2), 1)
-        bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=(1 + self.cfg.OLED_TOP_HEIGHT)
+        bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=(1 + self.cfg.OLED_TOP_HEIGHT))
         self.splash.append(bottom_inner_sprite)
 
     def show_direction(self):
@@ -234,11 +240,11 @@ class DisplayConstructor:
         i=0
         logging_state = True
         if "NEO_PIXEL" in hw.DISPLAY_TYPES:
-            self.display[i] = displays.neo_pixel_display(hw, cfg, logging=logging_state)
+            self.display[i] = neo_pixel_display(hw, cfg, logging=logging_state)
             i += 1
             logging_state = False
         if "OLED" in hw.DISPLAY_TYPES:
-            self.display[i] = displays.oled_display(hw, cfg, logging=logging_state)
+            self.display[i] = oled_display(hw, cfg, logging=logging_state)
             i += 1
             logging_state = False
 
