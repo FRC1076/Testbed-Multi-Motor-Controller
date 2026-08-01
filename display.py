@@ -182,12 +182,12 @@ class OLEDDisplay(Display):
         self.bottom_clear()
 
     def top_clear(self):
-        top_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (OLED_BORDER_WIDTH * 2), self.cfg.OLED_TOP_HEIGHT - (OLED_BORDER_WIDTH * 2), 1)
+        top_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (self.cfg.OLED_BORDER_WIDTH * 2), self.cfg.OLED_TOP_HEIGHT - (self.cfg.OLED_BORDER_WIDTH * 2), 1)
         top_inner_sprite = displayio.TileGrid(top_inner_bitmap, pixel_shader=self.blank, x=1, y=1)
         self.splash.append(top_inner_sprite)
 
     def bottom_clear(self):
-        bottom_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (OLED_BORDER_WIDTH * 2), self.hw.OLED_BOTTOM_HEIGHT - (OLED_BORDER_WIDTH * 2), 1)
+        bottom_inner_bitmap = displayio.Bitmap(self.hw.OLED_DISPLAY_WIDTH - (self.cfg.OLED_BORDER_WIDTH * 2), self.cfg.OLED_BOTTOM_HEIGHT - (self.cfg.OLED_BORDER_WIDTH * 2), 1)
         bottom_inner_sprite = displayio.TileGrid(bottom_inner_bitmap, pixel_shader=self.blank, x=1, y=(1 + self.cfg.OLED_TOP_HEIGHT))
         self.splash.append(bottom_inner_sprite)
 
@@ -197,21 +197,21 @@ class OLEDDisplay(Display):
                 direction_text = "Forward"
             else:
                 direction_text = "Reverse"
-            direction_sprite = label.Label(terminalio.FONT, text=direction_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[0])
+            direction_sprite = label.Label(terminalio.FONT, text=direction_text, color=self.colored[0], x=self.cfg.OLED_HORIZONTALS[side], y= self.cfg.OLED_VERTICALS[0] + self.cfg.OLED_TEXT_CENTERING_VALUE)
             self.splash.append(direction_sprite)
 
     def show_error(self):
         error_text = "Zero Speeds, Please"
-        error_sprite = label.Label(terminalio.FONT, text=error_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[0], y=self.hw.OLED_VERTICALS[0])
+        error_sprite = label.Label(terminalio.FONT, text=error_text, color=self.colored[0], x=self.cfg.OLED_HORIZONTALS[0], y= self.cfg.OLED_VERTICALS[0] + self.cfg.OLED_TEXT_CENTERING_VALUE)
         self.splash.append(error_sprite)
 
     def show_speed(self):
         for (side, speed) in enumerate(self.speeds):
             speed_text = f"{speed} %"
-            speed_sprite = label.Label(terminalio.FONT, text=speed_text, color=self.colored[0], x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[1])
+            speed_sprite = label.Label(terminalio.FONT, text=speed_text, color=self.colored[0], x=self.cfg.OLED_HORIZONTALS[side], y= self.cfg.OLED_VERTICALS[1] + self.cfg.OLED_TEXT_CENTERING_VALUE)
 
-            bar_bitmap = displayio.Bitmap(round(self.hw.OLED_BAR_WIDTH * speed/100), 8, 1)
-            bar_sprite = displayio.TileGrid(bar_bitmap, pixel_shader=self.colored, x=self.hw.OLED_HORIZONTALS[side], y=self.hw.OLED_VERTICALS[2])
+            bar_bitmap = displayio.Bitmap(round(self.cfg.OLED_BAR_WIDTH * speed/100), 8, 1)
+            bar_sprite = displayio.TileGrid(bar_bitmap, pixel_shader=self.colored, x=self.cfg.OLED_HORIZONTALS[side], y=self.cfg.OLED_VERTICALS[2])
 
             self.splash.append(speed_sprite)
             self.splash.append(bar_sprite)
@@ -245,6 +245,7 @@ class DisplayConstructor:
             logging_state = False
         if "OLED" in hw.DISPLAY_TYPES:
             self.display[i] = oled_display(hw, cfg, logging=logging_state)
+            self.display[i].set_borders()
             i += 1
             logging_state = False
 
