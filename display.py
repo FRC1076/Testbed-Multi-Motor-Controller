@@ -31,9 +31,9 @@ class IndicatorLight:
         if self.cycle_count == 0:
             self.light_state = not self.light_state
             if self.light_state:
-                self.update_light(True)
+                self.update_light(self.light_state)
             else:
-                self.update_light(False)
+                self.update_light(self.light_state)
 
 class FeatherIndicatorLight(IndicatorLight):
     def __init__(self, hw):
