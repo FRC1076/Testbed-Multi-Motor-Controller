@@ -10,7 +10,7 @@ OLED_TEXT_CENTERING_VALUE = 4
 OLED_TEXT_WIDTH_AND_SPACING = 5 + 1
 
 # Usable by All
-INT_HALF_CHANNELS = round(self.hw.NUM_CHANNELS / 2)
+INT_HALF_CHANNELS = round(hw.NUM_CHANNELS / 2)
 
 # UART Configuration
 logging_state = True
@@ -21,9 +21,9 @@ NEO_REVERSE_COLOR = (255, 0, 0) # Red
 NEO_ERROR_COLOR = (255,127,0) # Orange
 NEO_SPEED_COLOR = NEO_ERROR_COLOR
 NEO_DISPLAY_BRIGHTNESS = 0.025
-NEO_SAME_SPEED_DIRECTION_BAR ‎ =  4
-NEO_MODE_SELECT_BAR ‎ =  8
-NEO_SAME_NUM_SPEED_PIXELS= (self.hw.NEO_PIXEL_NUM_LIGHTS - (NEO_SAME_SPEED_DIRECTION_BAR * INT_HALF_CHANNELS * 2))
+NEO_SAME_SPEED_DIRECTION_BAR = 4
+NEO_MODE_SELECT_BAR = 8
+NEO_SAME_NUM_SPEED_PIXELS= (hw.NEO_PIXEL_NUM_LIGHTS - (NEO_SAME_SPEED_DIRECTION_BAR * INT_HALF_CHANNELS * 2))
 NEO_SAME_SPEED_START_VAL = NEO_SAME_SPEED_DIRECTION_BAR * INT_HALF_CHANNELS
 NEO_NO_MODE_LIGHTS = [1, 0, 0, 1, 0.5, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0.5, 1, 0, 0, 1]       # 1 is on, 0.5 is blinking, 0 is off
 
@@ -46,11 +46,4 @@ for i in range(OLED_NUM_VERTICALS):
     OLED_VERTICALS[i] = OLED_TOP_HEIGHT + ((1 + (i * 2)) * OLED_SPACING) + (i * OLED_TEXT_HEIGHT)       # Currently 24, 40, and 52 """
 
 # Modes
-# Creation of functions with mode names to allow what I thought was simpler selection code
-def separate_speed():
-    pass
-def same_speed():
-    pass
-def no_mode():
-    pass
-modes = [separate_speed, same_speed, no_mode, no_mode] # The code is currently set up for 4 modes
+modes = ["same_speed","same_speed","separate_speed","separate_speed"] # The code is currently set up for 4 modes
