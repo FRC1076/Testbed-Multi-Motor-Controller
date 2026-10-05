@@ -1,10 +1,10 @@
 import board
-import displayio       # For OLED
-import terminalio       # For OLED
-from adafruit_display_text import label       # For OLED
-from i2cdisplaybus import I2CDisplayBus       # For OLED
-import busio       # For OLED
-import adafruit_displayio_ssd1306       # For OLED
+#import displayio       # For OLED
+#import terminalio       # For OLED
+#from adafruit_display_text import label       # For OLED
+#from i2cdisplaybus import I2CDisplayBus       # For OLED
+#import busio       # For OLED
+#import adafruit_displayio_ssd1306       # For OLED
 import neopixel       # For NEO Pixel
 if board.board_id == 'raspberry_pi_pico':
     import raspberry_pi_pico as hw
@@ -123,7 +123,7 @@ class NEOPixelDisplay(Display):
         self.OFF = (0, 0, 0)
 
         # Display init
-        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NEO_PIXEL_NUM_LIGHTS, brightness=cfg.NEO_PIXEL_DISPLAY_BRIGHTNESS)
+        self.pixels = neopixel.NeoPixel(hw.NEOPIXEL_PIN, hw.NEO_PIXEL_NUM_LIGHTS, brightness=cfg.NEO_DISPLAY_BRIGHTNESS)
         self.pixels.auto_write = False
         self.pixels.fill(self.OFF)
 
@@ -131,7 +131,7 @@ class NEOPixelDisplay(Display):
         """
         Calculate the start value for the display
         """
-        if channel <= self.int_half_channels:
+        if channel <= self.cfg.INT_HALF_CHANNELS:
             start_val = self.cfg.NEO_SAME_SPEED_DIRECTION_BAR * channel
         else:
             start_val = self.same_num_speed_pixels + (self.cfg.NEO_SAME_SPEED_DIRECTION_BAR * channel)
@@ -147,7 +147,7 @@ class NEOPixelDisplay(Display):
         """
         Convert the speed percentage into pixel index
         """
-        return speed * self.same_num_speed_pixels
+        return speed * self.cfg.NEO_SAME_NUM_SPEED_PIXELS
 
     def separate_start_val(self, channel):
         """
@@ -186,14 +186,17 @@ class NEOPixelDisplay(Display):
         self.pixels.show()
 
     def same_speed(self, speeds_and_directions, error_state=False, non_zeros=None):
+        if error_state:
+            self.log_error(non_zeros)
+        self.log_speed(speeds_and_directions)
         self.pixels.fill(self.OFF)
         if error_state:
             light_state = self.update_blink()
         for (channel, (speed, direction)) in enumerate (speeds_and_directions):
+            direction_start_val = self.same_direction_start_val(channel)
             if error_state:
                 if light_state:
                     direction_color = self.cfg.NEO_ERROR_COLOR
-                    direction_start_val = self.same_direction_start_val(channel)
                     for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR - 1):
                         self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
             else:
@@ -201,13 +204,12 @@ class NEOPixelDisplay(Display):
                     direction_color = self.cfg.NEO_FORWARD_COLOR
                 else:
                     direction_color = self.cfg.NEO_REVERSE_COLOR
-                direction_start_val = self.same_direction_start_val(channel)
                 for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR - 1):
                     self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
-            if channel == self.hw.BASE_CHANNEL:
-                index = self.same_speed_to_index(speed)
-                for i in range(self.same_speed_start_val,index + self.same_speed_start_val):
-                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.SPEED_COLOR
+                if channel == self.hw.BASE_CHANNEL:
+                    index = self.same_speed_to_index(speed)
+                    for i in range(self.cfg.NEO_SAME_SPEED_START_VAL,index + self.cfg.NEO_SAME_SPEED_START_VAL):
+                        self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.SPEED_COLOR
         self.pixels.show()
 
     def no_mode(self, speeds_and_directions, error_state=False, non_zeros=None):
@@ -222,15 +224,20 @@ class NEOPixelDisplay(Display):
                     self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.ERROR_COLOR
         self.pixels.show()
 
+        print("Neo no mode reached")
+        print("Error state:", error_state)
+
     def mode_select(self, mode_number):
         light_state = self.update_blink()
         if light_state:
             self.pixels.fill(self.cfg.NEO_SPEED_COLOR)
         else:
             self.pixels.fill(self.OFF)
-        for i in range(self.cfg.NEO_PIXEL_MODE_SELECT_BAR * mode_number, (self.cfg.NEO_PIXEL_MODE_SELECT_BAR * (mode_number + 1)) - 1):
+        for i in range(self.cfg.NEO_MODE_SELECT_BAR * mode_number, self.cfg.NEO_MODE_SELECT_BAR * (mode_number + 1)):
             self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_FORWARD_COLOR
         self.pixels.show()
+
+        print("Neo mode select reached")
 
 class OLEDDisplay(Display):
     def __init__(self, hw, cfg, logging):
@@ -299,7 +306,7 @@ class OLEDDisplay(Display):
             self.splash.append(speed_sprite)
             self.splash.append(bar_sprite)
 
-    def same_show_speed(self)
+    def same_show_speed(self):
         speed_text = f"{self.speeds[self.hw.BASE_CHANNEL]} %"
         speed_sprite = label.Label(terminalio.FONT, text=speed_text, color=self.colored[0], x=self.cfg.OLED_HORIZONTALS[0], y= self.cfg.OLED_VERTICALS[1] + self.cfg.OLED_TEXT_CENTERING_VALUE)
 
@@ -372,9 +379,13 @@ class OLEDDisplay(Display):
 
 class DisplayConstructor:
     def __init__(self, hw, cfg, oled_display, neo_pixel_display, indicator_light):
+        # Make things stick around
         self.indicator = indicator_light
         self.NUM_DISPLAYS = len(hw.DISPLAY_TYPES)
         self.display = [None] * self.NUM_DISPLAYS
+        self.modes = cfg.modes
+
+        # Construction
         i=0
         logging_state = True
         if "NEO_PIXEL" in hw.DISPLAY_TYPES:
@@ -388,16 +399,24 @@ class DisplayConstructor:
             logging_state = False
 
     def display_error(self, mode_number, speeds_and_directions, non_zeros):
-        mode = self.cfg.modes[mode_number]()
         self.indicator.show_on()
         for i in range(self.NUM_DISPLAYS):
-            self.display[i].mode(speeds_and_directions, True, non_zeros)
-
+            if self.modes[mode_number] == "separate_speed":
+                self.display[i].separate_speed(speeds_and_directions, True, non_zeros)
+            elif self.modes[mode_number] == "same_speed":
+                self.display[i].same_speed(speeds_and_directions, True, non_zeros)
+            elif self.modes[mode_number] == "no_speed":
+                self.display[i].no_speed(speeds_and_directions, True, non_zeros)
+    
     def display_speed(self, mode_number, speeds_and_directions):
-        mode = self.cfg.modes[mode_number]()
         self.indicator.show_on()
         for i in range(self.NUM_DISPLAYS):
-            self.display[i].mode(speeds_and_directions)
+            if self.modes[mode_number] == "separate_speed":
+                self.display[i].separate_speed(speeds_and_directions)
+            elif self.modes[mode_number] == "same_speed":
+                self.display[i].same_speed(speeds_and_directions)
+            elif self.modes[mode_number] == "no_speed":
+                self.display[i].no_speed(speeds_and_directions)
 
     def display_mode_select(self, mode_number):
         self.indicator.show_on()
