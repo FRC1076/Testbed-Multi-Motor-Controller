@@ -20,6 +20,7 @@ class DriveMotor:
 
         # Array creation
         self.talon_speed_controller = [None] * hw.NUM_CHANNELS
+        self.speed_pins = [None] * hw.NUM_CHANNELS
         self.speed = [None] * hw.NUM_CHANNELS
         self.direction_pin = [None] * hw.NUM_CHANNELS
         self.direction_signs = [0] * hw.NUM_CHANNELS
@@ -28,7 +29,7 @@ class DriveMotor:
         for (channel,pin) in enumerate(hw.PWM_OUT_PINS):
             self.talon_speed_controller[channel] = adafruit_servo.ContinuousServo(pwmio.PWMOut(pin,frequency=hw.PWM_FREQUENCY))
         for (channel,(A_pin,D_pin)) in enumerate(hw.POTENTIOMETER_AND_SWITCH_PINS):
-            self.speed[channel] = self.potentiometer_to_speed(analogio.AnalogIn(A_pin).value)
+            self.speed_pins[channel] = analogio.AnalogIn(A_pin)
             self.direction_pin[channel] = digitalio.DigitalInOut(D_pin)
             self.direction_pin[channel].direction = digitalio.Direction.INPUT
             self.direction_pin[channel].pull = digitalio.Pull.UP
@@ -46,29 +47,31 @@ class DriveMotor:
                 self.mode_number = 3
         return self.mode_number
 
-    def potentiometer_to_speed(self, potentiometer):
+    def update_speed(self):
         """
         Convert raw speed to servo control speed subject to DEADBAND
         """
-        speed = potentiometer / self.SERVO_PER_POTENTIOMETER
-        if abs(speed) < self.hw.DEADBAND:
-            return 0.0
-        else:
-            return speed
+        for channel in range(self.hw.NUM_CHANNELS):
+            speed = self.speed_pins[channel].value / self.SERVO_PER_POTENTIOMETER
+            if abs(speed) < self.hw.DEADBAND:
+                self.speed[channel] = 0.0
+            else:
+                self.speed[channel] = speed
 
     def make_speeds_and_directions(self, error_state=False):
         if error_state:
             for (channel, direction) in enumerate(self.direction_signs):
                 self.speeds_and_directions[channel] = (self.speed[channel], 1)
         else:
-            if f"{self.modes[self.mode_number]}" == "same_speed":
-               for (channel, direction) in enumerate(self.direction_signs): 
+            if self.modes[self.mode_number] == "same_speed":
+                for (channel, direction) in enumerate(self.direction_signs): 
                     self.speeds_and_directions[channel] = (self.speed[self.hw.BASE_CHANNEL], direction)
-            elif f"{self.modes[self.mode_number]}" == "separate_speeds":
-               for (channel, direction) in enumerate(self.direction_signs): 
+            elif self.modes[self.mode_number] == "separate_speed":
+                for (channel, direction) in enumerate(self.direction_signs): 
                     self.speeds_and_directions[channel] = (self.speed[channel], direction)
 
     def check_for_nonzero_speed(self):
+        self.update_speed()
         """
         See if any pins are on
         """
@@ -92,7 +95,8 @@ class DriveMotor:
             self.talon_speed_controller[channel] = self.speed[self.hw.BASE_CHANNEL] * direction
 
     def run_motor(self):
-        for channel in range (self.hw.NUM_CHANNELS):
+        self.update_speed()
+        for channel in range(self.hw.NUM_CHANNELS):
             if self.direction_pin[channel].value:
                 self.direction_signs[channel] = -1
             else:
@@ -106,4 +110,5 @@ class DriveMotor:
                 self.no_speed()
         self.make_speeds_and_directions()
         return self.speeds_and_directions
+
 motor = DriveMotor(hw, cfg)
