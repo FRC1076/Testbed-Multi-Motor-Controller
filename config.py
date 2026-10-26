@@ -46,4 +46,4 @@ for i in range(OLED_NUM_VERTICALS):
     OLED_VERTICALS[i] = OLED_TOP_HEIGHT + ((1 + (i * 2)) * OLED_SPACING) + (i * OLED_TEXT_HEIGHT)       # Currently 24, 40, and 52 """
 
 # Modes
-modes = ["same_speed","same_speed","separate_speed","separate_speed"] # The code is currently set up for 4 modes
+modes = ["same_speed","no_mode","no_mode","no_mode"] # The code is currently set up for 4 modes with the current options as separate_speed, same_speed, and no_mode
