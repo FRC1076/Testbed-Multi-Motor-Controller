@@ -131,10 +131,10 @@ class NEOPixelDisplay(Display):
         """
         Calculate the start value for the display
         """
-        if channel <= self.cfg.INT_HALF_CHANNELS:
+        if channel <= self.cfg.INT_HALF_CHANNELS - 1:
             start_val = self.cfg.NEO_SAME_SPEED_DIRECTION_BAR * channel
         else:
-            start_val = self.same_num_speed_pixels + (self.cfg.NEO_SAME_SPEED_DIRECTION_BAR * channel)
+            start_val = self.cfg.NEO_SAME_NUM_SPEED_PIXELS + (self.cfg.NEO_SAME_SPEED_DIRECTION_BAR * channel)
         return start_val
 
     def separate_speed_to_index(self, speed):
@@ -197,19 +197,19 @@ class NEOPixelDisplay(Display):
             if error_state:
                 if light_state:
                     direction_color = self.cfg.NEO_ERROR_COLOR
-                    for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR - 1):
+                    for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR):
                         self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
             else:
                 if direction == 1:
                     direction_color = self.cfg.NEO_FORWARD_COLOR
                 else:
                     direction_color = self.cfg.NEO_REVERSE_COLOR
-                for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR - 1):
+                for i in range(direction_start_val, direction_start_val + self.cfg.NEO_SAME_SPEED_DIRECTION_BAR):
                     self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = direction_color
                 if channel == self.hw.BASE_CHANNEL:
                     index = self.same_speed_to_index(speed)
                     for i in range(self.cfg.NEO_SAME_SPEED_START_VAL,index + self.cfg.NEO_SAME_SPEED_START_VAL):
-                        self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.SPEED_COLOR
+                        self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_SPEED_COLOR
         self.pixels.show()
 
     def no_mode(self, speeds_and_directions, error_state=False, non_zeros=None):
