@@ -91,11 +91,13 @@ class Display:
 
     def log_mode_select(self, mode_number):
         if self.logging:
+            print("")
             print("Currently selected:", self.modes[mode_number])
+            print("")
 
     def log_no_mode(self):
         if self.logging:
-            print("No mode selected")
+            print("No mode has been selected")
     
     def separate_speed(self, speeds_and_directions, error_state=False, non_zeros=None):
         if error_state:
@@ -218,14 +220,11 @@ class NEOPixelDisplay(Display):
         light_state = self.update_blink()
         for (i, light) in enumerate(self.cfg.NEO_NO_MODE_LIGHTS):
             if light == 1:
-                self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.ERROR_COLOR
+                self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_ERROR_COLOR
             elif light == 0.5:
                 if light_state:
-                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.ERROR_COLOR
+                    self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_ERROR_COLOR
         self.pixels.show()
-
-        print("Neo no mode reached")
-        print("Error state:", error_state)
 
     def mode_select(self, mode_number):
         light_state = self.update_blink()
@@ -236,8 +235,6 @@ class NEOPixelDisplay(Display):
         for i in range(self.cfg.NEO_MODE_SELECT_BAR * mode_number, self.cfg.NEO_MODE_SELECT_BAR * (mode_number + 1)):
             self.pixels[self.hw.NEO_PIXEL_LIGHTS_ORDER[i]] = self.cfg.NEO_FORWARD_COLOR
         self.pixels.show()
-
-        print("Neo mode select reached")
 
 class OLEDDisplay(Display):
     def __init__(self, hw, cfg, logging):
@@ -405,19 +402,20 @@ class DisplayConstructor:
                 self.display[i].separate_speed(speeds_and_directions, True, non_zeros)
             elif self.modes[mode_number] == "same_speed":
                 self.display[i].same_speed(speeds_and_directions, True, non_zeros)
-            elif self.modes[mode_number] == "no_speed":
-                self.display[i].no_speed(speeds_and_directions, True, non_zeros)
+            elif self.modes[mode_number] == "no_mode":
+                self.display[i].no_mode(speeds_and_directions, True, non_zeros)
     
     def display_speed(self, mode_number, speeds_and_directions):
         self.indicator.show_on()
+        print(self.modes[mode_number])
         for i in range(self.NUM_DISPLAYS):
             if self.modes[mode_number] == "separate_speed":
                 self.display[i].separate_speed(speeds_and_directions)
             elif self.modes[mode_number] == "same_speed":
                 self.display[i].same_speed(speeds_and_directions)
-            elif self.modes[mode_number] == "no_speed":
-                self.display[i].no_speed(speeds_and_directions)
-
+            elif self.modes[mode_number] == "no_mode":
+                self.display[i].no_mode(speeds_and_directions)
+                
     def display_mode_select(self, mode_number):
         self.indicator.show_on()
         for i in range(self.NUM_DISPLAYS):
