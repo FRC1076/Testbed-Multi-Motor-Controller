@@ -94,6 +94,10 @@ class DriveMotor:
         for (channel, direction) in enumerate(self.direction_signs):
             self.talon_speed_controller[channel] = self.speed[self.hw.BASE_CHANNEL] * direction
 
+    def no_mode(self):
+        for channel in range(len(self.direction_signs)):
+            self.talon_speed_controller[channel] = 0
+    
     def run_motor(self):
         self.update_speed()
         for channel in range(self.hw.NUM_CHANNELS):
@@ -102,12 +106,13 @@ class DriveMotor:
             else:
                 self.direction_signs[channel] = 1
             
-            if self.modes[self.mode_number] == "separate_speed":
-                self.separate_speed()
-            elif self.modes[self.mode_number] == "same_speed":
-                self.same_speed()
-            elif self.modes[self.mode_number] == "no_speed":
-                self.no_speed()
+        if self.modes[self.mode_number] == "separate_speed":
+            self.separate_speed()
+        elif self.modes[self.mode_number] == "same_speed":
+            self.same_speed()
+        elif self.modes[self.mode_number] == "no_mode":
+            self.no_mode()
+        
         self.make_speeds_and_directions()
         return self.speeds_and_directions
 
