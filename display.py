@@ -74,6 +74,9 @@ class Display:
             print("Blinking off")       # Honestly, if you get here, there's a problem
             return 0
 
+    def log_mode_select(self, mode_number):
+        print("Current mode selected:", self.modes[mode_number])
+    
     def log_error(self, non_zeros):
         if self.logging:
             if len(non_zeros) == 1:
@@ -88,12 +91,6 @@ class Display:
         if self.logging:
             for (channel, (speed, direction)) in enumerate(speeds_and_directions):
                 print(f"Servo {channel}: {speed * direction}")
-
-    def log_mode_select(self, mode_number):
-        if self.logging:
-            print("")
-            print("Currently selected:", self.modes[mode_number])
-            print("")
 
     def log_no_mode(self):
         if self.logging:
@@ -227,6 +224,7 @@ class NEOPixelDisplay(Display):
         self.pixels.show()
 
     def mode_select(self, mode_number):
+        self.log_mode_select(mode_number)
         light_state = self.update_blink()
         if light_state:
             self.pixels.fill(self.cfg.NEO_SPEED_COLOR)
@@ -357,6 +355,7 @@ class OLEDDisplay(Display):
         self.splash.append(line_3_sprite)
 
     def mode_select(self, mode_number):
+        self.log_mode_select(mode_number)
         self.bottom_clear()
         for i in len(self.modes):
             v = round((i + 1) / 2) - 1
@@ -407,7 +406,6 @@ class DisplayConstructor:
     
     def display_speed(self, mode_number, speeds_and_directions):
         self.indicator.show_on()
-        print(self.modes[mode_number])
         for i in range(self.NUM_DISPLAYS):
             if self.modes[mode_number] == "separate_speed":
                 self.display[i].separate_speed(speeds_and_directions)
